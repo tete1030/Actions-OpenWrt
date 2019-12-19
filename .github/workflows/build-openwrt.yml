@@ -128,6 +128,7 @@ jobs:
       NO_REMOTE_CACHE: 1
       INLINE_CACHE: 1
       NO_PUSH: 1
+      IMAGE_BASE: '${{secrets.docker_username}}/test:latest'
       BUILD_ARGS: 'IMAGE_BASE'
 
     steps:
