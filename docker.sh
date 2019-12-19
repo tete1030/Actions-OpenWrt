@@ -97,9 +97,9 @@ build_image() {
 
   declare -a build_other_opts
   if [ "x$NO_PUSH" = "x1" ]; then
-    build_other_opts+=( --output=type=image,push=false )
+    build_other_opts+=( "--output=type=image,name=$(_get_full_image_name):${IMAGE_TAG}-build,push=false" )
   else
-    build_other_opts+=( --push )
+    build_other_opts+=( "--output=type=image,name=$(_get_full_image_name):${IMAGE_TAG}-build,push=true" )
   fi
   build_other_opts+=( "--tag=$(_get_full_image_name):${IMAGE_TAG}-build" )
 
