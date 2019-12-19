@@ -119,11 +119,23 @@ build_image() {
 }
 
 copy_files() {
+  COPY_CACHE_DIR="cache/buildresult"
+  BUILDRESULT_IMAGE_DIR="/buildresult"
   TAG="$(_get_full_image_name):${IMAGE_TAG}-build"
-  docker buildx build --no-cache --target buildresult "--output=type=local,dest=$2" - << EOF
-FROM alpine AS buildresult
+  if [ -d "${COPY_CACHE_DIR}" -a ! -z "$(eval ls -A \"${COPY_CACHE_DIR}\")" ]; then
+    echo "Error: \'${COPY_CACHE_DIR}\' directory already exists and not empty" >&2
+    exit
+  fi
+  mkdir -p "${COPY_CACHE_DIR}" || true
+  docker buildx build --no-cache --target buildresult "--output=type=local,dest=${COPY_CACHE_DIR}" - << EOF
+FROM scratch AS buildresult
+WORKDIR "${BUILDRESULT_IMAGE_DIR}"
 COPY --from="${TAG}" "${1}" ./
 EOF
+  all_files=( "${COPY_CACHE_DIR}/${BUILDRESULT_IMAGE_DIR}"/* )
+  mv "${all_files[@]}" "${2}"
+  all_other_files=( "${COPY_CACHE_DIR}"/* )
+  rm -rf "${all_other_files[@]}" || true
   # docker run -d -i --rm --name builder "$(_get_full_image_name):${IMAGE_TAG}"
   # docker exec builder stat "$1"
   # docker cp builder:"$1" "$2"
