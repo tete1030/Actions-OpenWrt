@@ -97,7 +97,7 @@ jobs:
       if: (!cancelled())
       run: |
         . docker.sh
-        copy_files /home/builder/firstfile "$(pwd)/firstfile"
+        copy_files firstfile "$(pwd)/firstfile"
         echo "File content:"
         cat "$(pwd)/firstfile" 
         echo "::set-output name=status::success"
@@ -165,7 +165,7 @@ jobs:
       if: (!cancelled())
       run: |
         . docker.sh
-        copy_files /home/builder/firstfile "$(pwd)/firstfile"
+        copy_files firstfile "$(pwd)/firstfile"
         echo "File content:"
         cat "$(pwd)/firstfile" 
         echo "::set-output name=status::success"
