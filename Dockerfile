@@ -1,28 +1,14 @@
-FROM ubuntu:18.04 AS init-env
-RUN useradd -ms /bin/bash builder \
-  && apt-get -qq update && apt-get -qq install sudo \
-  && /bin/bash -c 'echo "builder ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/99_sudo_include_file'
-USER builder
-WORKDIR /home/builder
-COPY --chown=builder:builder scripts ./scripts
-RUN scripts/initenv.sh
+FROM ubuntu:18.04 AS first-stage
+RUN touch firstfile
 
-FROM init-env AS clone
-ARG REPO_URL
-ARG REPO_BRANCH
-RUN REPO_URL="${REPO_URL}" REPO_BRANCH="${REPO_BRANCH}" scripts/clone.sh
+FROM first-stage AS second-stage
+RUN echo "Hello"
 
-FROM clone AS custom
-ARG CONFIG_FILE
-COPY --chown=builder:builder patches ./patches
-COPY --chown=builder:builder ${CONFIG_FILE} ./
-RUN CONFIG_FILE="${CONFIG_FILE}" scripts/customize.sh
+FROM second-stage AS third-stage-1
+RUN false
 
-FROM custom AS download
-RUN scripts/download.sh
+FROM second-stage AS third-stage-2
+RUN true
 
-FROM download AS multithread-compile
-RUN scripts/mt_compile.sh
-
-FROM download AS singlethread-compile
-RUN scripts/st_compile.sh
+FROM second-stage AS third-stage-3
+RUN echo "Test" >> firstfile
