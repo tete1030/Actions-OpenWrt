@@ -22,7 +22,6 @@ _get_full_image_name() {
 check_required_input() {
   _exit_if_empty USERNAME "${USERNAME}"
   _exit_if_empty PASSWORD "${PASSWORD}"
-  _exit_if_empty IMAGE_NAME "${IMAGE_BASE}"
   _exit_if_empty IMAGE_NAME "${IMAGE_NAME}"
   _exit_if_empty IMAGE_TAG "${IMAGE_TAG}"
   _exit_if_empty CONTEXT "${CONTEXT}"
@@ -36,7 +35,7 @@ configure_docker() {
   }' | sudo tee /etc/docker/daemon.json
   sudo service docker restart
   docker buildx rm builder || true
-  docker buildx create --use --name builder --node builder0 --driver docker-container ${EXTRA_BUILDX_CREATE_OPTS}
+  docker buildx create --use --name builder --node builder0 --driver ${BUILDX_DRIVER:-docker-container} ${EXTRA_BUILDX_CREATE_OPTS}
 }
 
 login_to_registry() {
@@ -45,9 +44,14 @@ login_to_registry() {
 
 pull_image() {
   # docker pull --all-tags "$(_get_full_image_name)" 2> /dev/null || true
-  docker buildx build --tag=mybaseimage --output=type=image,push=false - << EOF
+  if [ ! -z "${IMAGE_BASE}" ]; then
+    docker buildx build --tag=mybaseimage --output=type=image,push=false - << EOF
 FROM ${IMAGE_BASE}
 EOF
+  else
+    echo "No IMAGE_BASE configured for pulling" >&2
+    exit 1
+  fi
 }
 
 build_image() {
@@ -57,10 +61,7 @@ build_image() {
   declare -a cache_to
 
   if [ "x$NO_REMOTE_CACHE" = "x1" ]; then
-    if [ "x$INLINE_CACHE" = "x1" ]; then
-      # cache_from+=( "--cache-from=type=registry,ref=mylatestimage" )
-      cache_to+=( "--cache-to=type=inline,mode=min" )
-    else
+    if [ "x$NO_INLINE_CACHE" = "x1" ]; then
       if [ -f "./cache/index.json" ]; then
         cache_from+=( "--cache-from=type=local,src=./cache" )
       fi
@@ -68,6 +69,9 @@ build_image() {
       if [ ! -d "./cache" ]; then
         mkdir ./cache
       fi
+    else
+      cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):${IMAGE_TAG}-build" )
+      cache_to+=( "--cache-to=type=inline,mode=min" )
     fi
   else
     cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):buildcache" )
@@ -98,7 +102,6 @@ build_image() {
     build_other_opts+=( --push )
   fi
   build_other_opts+=( "--tag=$(_get_full_image_name):${IMAGE_TAG}-build" )
-  build_other_opts+=( "--tag=mylatestimage" )
 
   # build image using cache
   docker buildx build \
@@ -118,7 +121,7 @@ build_image() {
 copy_files() {
   COPY_CACHE_DIR="cache/buildresult"
   BUILDRESULT_IMAGE_DIR="/buildresult"
-  SOURCE_IMAGE="mylatestimage"
+  SOURCE_IMAGE="$(_get_full_image_name):${IMAGE_TAG}-build"
   if [ -d "${COPY_CACHE_DIR}" -a ! -z "$(eval ls -A \"${COPY_CACHE_DIR}\" 2>/dev/null)" ]; then
     echo "Error: \'${COPY_CACHE_DIR}\' directory already exists and not empty" >&2
     exit

@@ -34,9 +34,9 @@ jobs:
       PASSWORD: ${{secrets.docker_password}}
       IMAGE_NAME: ${{secrets.docker_username}}/test
       IMAGE_TAG: latest
-      CONTEXT: ./
+      CONTEXT: .
       DOCKERFILE: Dockerfile
-      IMAGE_BASE: alpine
+      BUILDX_DRIVER: docker-container
       BUILD_ARGS: ''
 
     steps:
@@ -54,11 +54,6 @@ jobs:
         . docker.sh
         configure_docker
         login_to_registry
-
-    - name: Pull base image
-      run: |
-        . docker.sh
-        pull_image
 
     - name: First stage
       run: |
@@ -129,10 +124,10 @@ jobs:
       PASSWORD: ${{secrets.docker_password}}
       IMAGE_NAME: ${{secrets.docker_username}}/test
       IMAGE_TAG: latest
-      CONTEXT: ./
+      CONTEXT: .
       DOCKERFILE: Dockerfile-inc
+      BUILDX_DRIVER: docker
       NO_REMOTE_CACHE: 1
-      INLINE_CACHE: 1
       NO_PUSH: 1
       IMAGE_BASE: '${{secrets.docker_username}}/test:latest'
       BUILD_ARGS: ''

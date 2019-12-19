@@ -1,4 +1,4 @@
-FROM mybaseimage AS first-stage
+FROM alpine AS first-stage
 RUN touch firstfile
 
 FROM first-stage AS second-stage
