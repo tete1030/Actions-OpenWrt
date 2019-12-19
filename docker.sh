@@ -122,7 +122,7 @@ copy_files() {
   COPY_CACHE_DIR="cache/buildresult"
   BUILDRESULT_IMAGE_DIR="/buildresult"
   TAG="$(_get_full_image_name):${IMAGE_TAG}-build"
-  if [ -d "${COPY_CACHE_DIR}" -a ! -z "$(eval ls -A \"${COPY_CACHE_DIR}\")" ]; then
+  if [ -d "${COPY_CACHE_DIR}" -a ! -z "$(eval ls -A \"${COPY_CACHE_DIR}\" 2>/dev/null)" ]; then
     echo "Error: \'${COPY_CACHE_DIR}\' directory already exists and not empty" >&2
     exit
   fi

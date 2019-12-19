@@ -1,9 +1,15 @@
 ARG IMAGE_BASE
 FROM ${IMAGE_BASE} AS first-stage
 RUN touch firstfile
+RUN touch secondfile
+RUN touch thirdfile
 
 FROM first-stage AS second-stage
-RUN echo "Hello Inc"
+RUN echo "Hello Inc0"
+RUN echo "Hello Inc1"
+RUN echo "Hello Inc2"
+RUN echo "Hello Inc3"
 
 FROM second-stage AS third-stage
 RUN echo "Test Inc" >> firstfile
+RUN echo "Test Inc" >> secondfile
