@@ -29,7 +29,6 @@ env:
 jobs:
   docker-build-test:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'repository_dispatch' && github.event.action == 'docker-test'
     env:
       USERNAME: ${{secrets.docker_username}}
       PASSWORD: ${{secrets.docker_password}}
@@ -117,7 +116,7 @@ jobs:
   docker-build-inc-test:
     runs-on: ubuntu-18.04
     needs: docker-build-test
-    if: github.event_name == 'repository_dispatch' && github.event.action == 'docker-inc-test'
+    if: github.event_name != 'repository_dispatch' || github.event.action == 'docker-inc-test'
     env:
       USERNAME: ${{secrets.docker_username}}
       PASSWORD: ${{secrets.docker_password}}
