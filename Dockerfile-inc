@@ -11,5 +11,7 @@ RUN echo "Hello Inc2"
 RUN echo "Hello Inc3"
 
 FROM second-stage AS third-stage
+RUN echo "Before, firstfile content:" && cat firstfile
 RUN echo "Test Inc" >> firstfile
 RUN echo "Test Inc" >> secondfile
+RUN echo "Current, firstfile content:" && cat firstfile
