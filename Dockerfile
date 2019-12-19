@@ -1,4 +1,4 @@
-FROM alpine AS first-stage
+FROM mybaseimage AS first-stage
 RUN touch firstfile
 
 FROM first-stage AS second-stage
@@ -11,4 +11,4 @@ FROM second-stage AS third-stage-2
 RUN true
 
 FROM second-stage AS third-stage-3
-RUN echo "Test" >> firstfile
+RUN echo "[$(date)] Test" >> firstfile

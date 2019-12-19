@@ -36,6 +36,7 @@ jobs:
       IMAGE_TAG: latest
       CONTEXT: ./
       DOCKERFILE: Dockerfile
+      IMAGE_BASE: alpine
       BUILD_ARGS: ''
 
     steps:
@@ -53,6 +54,11 @@ jobs:
         . docker.sh
         configure_docker
         login_to_registry
+
+    - name: Pull base image
+      run: |
+        . docker.sh
+        pull_image
 
     - name: First stage
       run: |
@@ -129,7 +135,7 @@ jobs:
       INLINE_CACHE: 1
       NO_PUSH: 1
       IMAGE_BASE: '${{secrets.docker_username}}/test:latest'
-      BUILD_ARGS: 'IMAGE_BASE'
+      BUILD_ARGS: ''
 
     steps:
     - name: Checkout
@@ -146,6 +152,11 @@ jobs:
         . docker.sh
         configure_docker
         login_to_registry
+
+    - name: Pull base image
+      run: |
+        . docker.sh
+        pull_image
 
     - name: First stage
       run: |

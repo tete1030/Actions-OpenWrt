@@ -1,5 +1,4 @@
-ARG IMAGE_BASE
-FROM ${IMAGE_BASE} AS first-stage
+FROM mybaseimage AS first-stage
 RUN touch firstfile
 RUN touch secondfile
 RUN touch thirdfile
@@ -12,6 +11,6 @@ RUN echo "Hello Inc3"
 
 FROM second-stage AS third-stage
 RUN echo "Before, firstfile content:" && cat firstfile
-RUN echo "Test Inc" >> firstfile
-RUN echo "Test Inc" >> secondfile
+RUN echo "[$(date)] Test Inc" >> firstfile
+RUN echo "[$(date)] Test Inc" >> secondfile
 RUN echo "Current, firstfile content:" && cat firstfile
