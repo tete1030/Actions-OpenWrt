@@ -101,8 +101,8 @@ build_image() {
 
   if [ "x$NO_REMOTE_CACHE" = "x1" ]; then
     if [ "x$NO_INLINE_CACHE" = "x1" ]; then
-      if [ "x${BUILDX_DRIVER}" != "xdocker" ]; then
-        echo "Buildx driver '${BUILDX_DRIVER}' does not support local cache" >&2
+      if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
+        echo "Buildx driver 'docker' does not support local cache" >&2
         exit 1
       fi
       if [ -f "./cache/index.json" ]; then
@@ -117,8 +117,8 @@ build_image() {
       cache_to+=( "--cache-to=type=inline,mode=min" )
     fi
   else
-    if [ "x${BUILDX_DRIVER}" != "xdocker" ]; then
-      echo "Buildx driver '${BUILDX_DRIVER}' does not support registry cache" >&2
+    if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
+      echo "Buildx driver 'docker' does not support registry cache" >&2
       exit 1
     fi
     cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):buildcache" )
