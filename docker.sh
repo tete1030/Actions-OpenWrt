@@ -99,8 +99,8 @@ build_image() {
   declare -a cache_from
   declare -a cache_to
 
-  if [ "x$NO_REMOTE_CACHE" = "x1" ]; then
-    if [ "x$NO_INLINE_CACHE" = "x1" ]; then
+  if [ "x${NO_REMOTE_CACHE}" = "x1" ]; then
+    if [ "x${NO_INLINE_CACHE}" = "x1" ]; then
       if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
         echo "Buildx driver 'docker' does not support local cache" >&2
         exit 1
@@ -130,7 +130,7 @@ build_image() {
     cache_to+=( "--cache-to=type=registry,ref=$(_get_full_image_name):buildcache,mode=max" )
   fi
   echo "From cache: ${cache_from[@]}"
-  if [ "x$NO_CACHE_TO" = "x1" ]; then
+  if [ "x${NO_CACHE_TO}" = "x1" ]; then
     echo "No saving cache"
     cache_to=()
   else
@@ -153,10 +153,10 @@ build_image() {
   fi
 
   declare -a build_other_opts
-  if [ ! -z "$OUTPUT" ]; then
+  if [ ! -z "${OUTPUT}" ]; then
     build_other_opts+=( "--output=${OUTPUT}" )
   else
-    if [ "x$NO_PUSH" = "x1" ]; then
+    if [ "x${NO_PUSH}" = "x1" ]; then
       if [ "x${BUILDX_DRIVER}" != "xdocker" ]; then
         echo "Warning: buildx driver '${BUILDX_DRIVER}' does not support image management. Images may lose when not pushing." >&2
       fi
@@ -171,7 +171,7 @@ build_image() {
 
   DOCKERFILE_FULL=${DOCKERFILE_FULL:-${CONTEXT}/${DOCKERFILE}}
 
-  if [ "x$DOCKERFILE_STDIN" = "x1" ]; then
+  if [ "x${DOCKERFILE_STDIN}" = "x1" ]; then
     (
       set -x
       docker buildx build \
@@ -265,7 +265,7 @@ push_git_tag() {
 }
 
 push_image_and_cache() {
-  if [ "x$NO_PUSH" = "x1" ]; then
+  if [ "x${NO_PUSH}" = "x1" ]; then
     if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
       docker push "$(_get_full_image_name):${IMAGE_TAG}-build"
     else
