@@ -12,7 +12,6 @@ on:
   release:
     types: [published]
   repository_dispatch:
-    types: [docker-test, docker-inc-test]
   push:
     paths-ignore:
     - README.md
@@ -54,16 +53,19 @@ jobs:
         . docker.sh
         configure_docker
         login_to_registry
+        configure_docker_buildx
 
     - name: First stage
       run: |
         . docker.sh
         build_image first-stage
+        echo "::set-env name=LAST_BUILD_STAGE::first-stage"
 
     - name: Second stage
       run: |
         . docker.sh
         build_image second-stage
+        echo "::set-env name=LAST_BUILD_STAGE::second-stage"
 
     - name: Third stage 1 - Fail
       id: stage_1
@@ -72,6 +74,7 @@ jobs:
         echo "::set-output name=started::yes"
         . docker.sh
         build_image third-stage-1
+        echo "::set-env name=LAST_BUILD_STAGE::third-stage-1"
 
     - name: Third stage 2 - Success
       if: failure() && steps.stage_1.outputs.started == 'yes'
@@ -80,6 +83,7 @@ jobs:
         echo "::set-output name=started::yes"
         . docker.sh
         build_image third-stage-2
+        echo "::set-env name=LAST_BUILD_STAGE::third-stage-2"
 
     - name: Third stage 3 - Append file
       id: stage_3
@@ -87,6 +91,7 @@ jobs:
         echo "::set-output name=started::yes"
         . docker.sh
         build_image third-stage-3
+        echo "::set-env name=LAST_BUILD_STAGE::third-stage-3"
 
     - name: Push docker cache
       if: (!cancelled()) && !(failure() && github.event_name == 'repository_dispatch' && github.event.client_payload.disable_push_when_fail == true)
@@ -130,7 +135,7 @@ jobs:
       NO_REMOTE_CACHE: 1
       NO_PUSH: 1
       IMAGE_BASE: '${{secrets.docker_username}}/test:latest'
-      BUILD_ARGS: ''
+      BUILD_ARGS: 'IMAGE_BASE'
 
     steps:
     - name: Checkout
@@ -147,6 +152,7 @@ jobs:
         . docker.sh
         configure_docker
         login_to_registry
+        configure_docker_buildx
 
     - name: Pull base image
       run: |
@@ -157,16 +163,19 @@ jobs:
       run: |
         . docker.sh
         build_image first-stage
+        echo "::set-env name=LAST_BUILD_STAGE::first-stage"
 
     - name: Second stage
       run: |
         . docker.sh
         build_image second-stage
+        echo "::set-env name=LAST_BUILD_STAGE::second-stage"
 
     - name: Third stage
       run: |
         . docker.sh
         build_image third-stage
+        echo "::set-env name=LAST_BUILD_STAGE::third-stage"
 
     - name: Copy out files
       id: copyfile
