@@ -121,6 +121,11 @@ build_image() {
       echo "Buildx driver 'docker' does not support registry cache" >&2
       exit 1
     fi
+    # 'cache' is for cache from previous build
+    # 'buildcache' is for cache from current build
+    # This is to prevent overriding cache during multi-stage building
+    # We will eventually rename 'buildcache' to 'cache'. At initial and final stage, they are the same
+    cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):cache" )
     cache_from+=( "--cache-from=type=registry,ref=$(_get_full_image_name):buildcache" )
     cache_to+=( "--cache-to=type=registry,ref=$(_get_full_image_name):buildcache,mode=max" )
   fi
@@ -166,33 +171,33 @@ build_image() {
 
   DOCKERFILE_FULL=${DOCKERFILE_FULL:-${CONTEXT}/${DOCKERFILE}}
 
-  # Save old shell state
-  oldstate="$(set +o); set -$-"
-  # Echo command
-  set -x
   if [ "x$DOCKERFILE_STDIN" = "x1" ]; then
-    docker buildx build \
-      "${build_target[@]}" \
-      "${build_args[@]}" \
-      "${cache_from[@]}" \
-      "${cache_to[@]}" \
-      "${build_other_opts[@]}" \
-      ${EXTRA_BUILDX_BUILD_OPTS} \
-      --file=- \
-      "${CONTEXT}" < "${DOCKERFILE_FULL}"
+    (
+      set -x
+      docker buildx build \
+        "${build_target[@]}" \
+        "${build_args[@]}" \
+        "${cache_from[@]}" \
+        "${cache_to[@]}" \
+        "${build_other_opts[@]}" \
+        ${EXTRA_BUILDX_BUILD_OPTS} \
+        --file=- \
+        "${CONTEXT}" < "${DOCKERFILE_FULL}"
+    )
   else
-    docker buildx build \
-      "${build_target[@]}" \
-      "${build_args[@]}" \
-      "${cache_from[@]}" \
-      "${cache_to[@]}" \
-      "${build_other_opts[@]}" \
-      ${EXTRA_BUILDX_BUILD_OPTS} \
-      "--file=${DOCKERFILE_FULL}" \
-      "${CONTEXT}"
+    (
+      set -x
+      docker buildx build \
+        "${build_target[@]}" \
+        "${build_args[@]}" \
+        "${cache_from[@]}" \
+        "${cache_to[@]}" \
+        "${build_other_opts[@]}" \
+        ${EXTRA_BUILDX_BUILD_OPTS} \
+        "--file=${DOCKERFILE_FULL}" \
+        "${CONTEXT}"
+    )
   fi
-  # restore old shell state
-  set +vx; eval "$oldstate"
 
   IFS="$IFS_ORI"
 }
@@ -224,8 +229,8 @@ copy_files() {
     mkdir -p "${TMP_DOCKERFILE_DIR}" || true
 
     echo "Building copy task Dockerfile"
-    DOCKERFILE_FULL="$TMP_DOCKERFILE_DIR/Dockerfile.tmp"
-    cp "${CONTEXT}/${DOCKERFILE}" "$TMP_DOCKERFILE_DIR/Dockerfile.tmp"
+    DOCKERFILE_FULL="${TMP_DOCKERFILE_DIR}/Dockerfile.tmp"
+    cp "${CONTEXT}/${DOCKERFILE}" "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp"
     cat >> "${TMP_DOCKERFILE_DIR}/Dockerfile.tmp" << EOF
 FROM scratch AS buildresult
 WORKDIR "${BUILDRESULT_IMAGE_DIR}"
@@ -259,11 +264,24 @@ push_git_tag() {
   docker buildx imagetools create -t "$image_with_git_tag" "$(_get_full_image_name):${IMAGE_TAG}"
 }
 
-push_image() {
+push_image_and_cache() {
+  if [ "x$NO_PUSH" = "x1" ]; then
+    if [ "x${BUILDX_DRIVER}" = "xdocker" ]; then
+      docker push "$(_get_full_image_name):${IMAGE_TAG}-build"
+    else
+      echo "Warning: separated pushing in '${BUILDX_DRIVER}' driver can be slow, because final image needs to be rebuilt from previous cache"
+      if [ -z "${LAST_BUILD_STAGE}" ]; then
+        echo "LAST_BUILD_STAGE not set" >&2
+        exit 1
+      fi
+      NO_PUSH=0 build_image "${LAST_BUILD_STAGE}"
+    fi
+  fi
   # push image
   # docker push "$(_get_full_image_name):${IMAGE_TAG}"
   docker buildx imagetools create -t "$(_get_full_image_name):${IMAGE_TAG}" "$(_get_full_image_name):${IMAGE_TAG}-build"
-  push_git_tag
+  docker buildx imagetools create -t "$(_get_full_image_name):cache" "$(_get_full_image_name):buildcache"
+  # push_git_tag
 }
 
 logout_from_registry() {

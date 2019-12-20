@@ -75,15 +75,17 @@ jobs:
         . docker.sh
         build_image third-stage-1
         echo "::set-env name=LAST_BUILD_STAGE::third-stage-1"
+        echo "::set-output name=success::yes"
 
     - name: Third stage 2 - Success
-      if: failure() && steps.stage_1.outputs.started == 'yes'
+      if: steps.stage_1.outputs.started == 'yes' && steps.stage_1.outputs.success != 'yes'
       id: stage_2
       run: |
         echo "::set-output name=started::yes"
         . docker.sh
         build_image third-stage-2
         echo "::set-env name=LAST_BUILD_STAGE::third-stage-2"
+        echo "::set-output name=success::yes"
 
     - name: Third stage 3 - Append file
       id: stage_3
@@ -92,12 +94,13 @@ jobs:
         . docker.sh
         build_image third-stage-3
         echo "::set-env name=LAST_BUILD_STAGE::third-stage-3"
+        echo "::set-output name=success::yes"
 
-    - name: Push docker cache
+    - name: Push image and cache
       if: (!cancelled()) && !(failure() && github.event_name == 'repository_dispatch' && github.event.client_payload.disable_push_when_fail == true)
       run: |
         . docker.sh
-        push_image
+        push_image_and_cache
 
     - name: Copy out files
       id: copyfile
