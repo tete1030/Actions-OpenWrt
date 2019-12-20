@@ -170,20 +170,29 @@ build_image() {
   oldstate="$(set +o); set -$-"
   # Echo command
   set -x
-
-  # build image using cache
-  docker buildx build \
-    "${build_target[@]}" \
-    "${build_args[@]}" \
-    "${cache_from[@]}" \
-    "${cache_to[@]}" \
-    "${build_other_opts[@]}" \
-    ${EXTRA_BUILDX_BUILD_OPTS} \
-    --progress=plain \
-    "--file=${DOCKERFILE_FULL}" \
-    "${CONTEXT}"
+  if [ "x$DOCKERFILE_STDIN" = "x1" ]; then
+    docker buildx build \
+      "${build_target[@]}" \
+      "${build_args[@]}" \
+      "${cache_from[@]}" \
+      "${cache_to[@]}" \
+      "${build_other_opts[@]}" \
+      ${EXTRA_BUILDX_BUILD_OPTS} \
+      --file=- \
+      "${CONTEXT}" < "${DOCKERFILE_FULL}"
+  else
+    docker buildx build \
+      "${build_target[@]}" \
+      "${build_args[@]}" \
+      "${cache_from[@]}" \
+      "${cache_to[@]}" \
+      "${build_other_opts[@]}" \
+      ${EXTRA_BUILDX_BUILD_OPTS} \
+      "--file=${DOCKERFILE_FULL}" \
+      "${CONTEXT}"
+  fi
   # restore old shell state
-  set -vx; eval "$oldstate"
+  set +vx; eval "$oldstate"
 
   IFS="$IFS_ORI"
 }
@@ -229,6 +238,7 @@ EOF
       export NO_TAG=1
       export OUTPUT="type=local,dest=${COPY_CACHE_DIR}"
       export DOCKERFILE_FULL
+      export DOCKERFILE_STDIN=1
       build_image buildresult
     )
     
