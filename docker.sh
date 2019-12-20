@@ -34,6 +34,7 @@ configure_docker() {
     "max-concurrent-uploads": 50
   }' | sudo tee /etc/docker/daemon.json
   sudo service docker restart
+  configure_docker_buildx
 }
 
 # Why buildx? Why different driver? Why complicated copying strategy?
