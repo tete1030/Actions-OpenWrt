@@ -198,7 +198,7 @@ build_image() {
     fi
     build_other_opts+=( "--output=${OUTPUT}" )
   else
-    if [ "x${NO_PUSH}" = "x1" ]; then
+    if [ "x${NO_BUILDTIME_PUSH}" = "x1" ]; then
       if [ "x${DK_BUILDX_DRIVER}" != "xdocker" ]; then
         echo "Warning: buildx driver '${DK_BUILDX_DRIVER}' does not support image management. Images may lose when not pushing." >&2
       fi
@@ -332,7 +332,7 @@ create_remote_tag_alias() {
 }
 
 push_image() {
-  if [ "x${NO_PUSH}" = "x1" ]; then
+  if [ "x${NO_BUILDTIME_PUSH}" = "x1" ]; then
     if [ "x${DK_BUILDX_DRIVER}" = "xdocker" ]; then
       docker push "$(_get_full_image_name_tag_for_build)"
     else
@@ -341,7 +341,7 @@ push_image() {
         echo "STATE_LAST_BUILD_STAGE not set" >&2
         exit 1
       fi
-      NO_PUSH=0 build_image "${STATE_LAST_BUILD_STAGE}"
+      NO_BUILDTIME_PUSH=0 build_image "${STATE_LAST_BUILD_STAGE}"
     fi
   fi
   # push image
