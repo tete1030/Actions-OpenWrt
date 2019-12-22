@@ -104,7 +104,7 @@ jobs:
 
     # Allow intermediate customization
     - name: SSH connection to Actions
-      if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
+      if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
@@ -134,7 +134,12 @@ jobs:
       run: df -h
 
     - name: Push image and cache
-      if: (!cancelled()) && (!failure() || github.event_name == 'repository_dispatch' && github.event.client_payload.push_when_fail == true)
+      if: |
+        !cancelled() && (
+          success() ||
+          github.event.client_payload.push_when_fail == true ||
+          github.event.deployment.payload.push_when_fail == true
+        )
       run: |
         . docker.sh
         push_image_and_cache
@@ -173,7 +178,10 @@ jobs:
 
     # failure checking
     - name: SSH connection to Actions
-      if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
+      if: |
+        failure() ||
+        github.event.client_payload.debug == true ||
+        github.event.deployment.payload.debug == true
       uses: tete1030/debugger-action@my
 
   docker-build-inc:
@@ -226,10 +234,10 @@ jobs:
         echo "::set-env name=IMAGE_LATEST::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}"
 
         UPDATE_FEEDS=0
-        [ "x${{ github.event.client_payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
+        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
         echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
         UPDATE_REPO=0
-        [ "x${{ github.event.client_payload.update_repo }}" != "xtrue" ] || UPDATE_REPO=1
+        [ "x${{ github.event.client_payload.update_repo || github.event.deployment.payload.update_repo }}" != "xtrue" ] || UPDATE_REPO=1
         echo "::set-env name=UPDATE_REPO::${UPDATE_REPO}"
 
         scripts/cleanup.sh
@@ -248,7 +256,7 @@ jobs:
 
     - name: Check if use latest base image
       env:
-        BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest }}
+        BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest || github.event.deployment.payload.use_latest }}
       run: |
         . docker.sh
         set +eo pipefail
@@ -267,7 +275,7 @@ jobs:
 
     # Allow intermediate customization
     - name: SSH connection to Actions
-      if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
+      if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
@@ -303,7 +311,12 @@ jobs:
       run: df -h
 
     - name: Push image
-      if: (!cancelled()) && (!failure() || github.event_name == 'repository_dispatch' && github.event.client_payload.push_when_fail == true)
+      if: |
+        !cancelled() && (
+          success() ||
+          github.event.client_payload.push_when_fail == true ||
+          github.event.deployment.payload.push_when_fail == true
+        )
       run: |
         . docker.sh
         push_image
@@ -342,7 +355,10 @@ jobs:
 
     # failure checking
     - name: SSH connection to Actions
-      if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
+      if: |
+        failure() ||
+        github.event.client_payload.debug == true ||
+        github.event.deployment.payload.debug == true
       uses: tete1030/debugger-action@my
 
   docker-build-package:
@@ -396,7 +412,7 @@ jobs:
         echo "::set-env name=IMAGE_LATEST_INC::${DK_REGISTRY:+$DK_REGISTRY/}${IMAGE_NAME}:${BUILDER_TAG}-inc"
 
         UPDATE_FEEDS=0
-        [ "x${{ github.event.client_payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
+        [ "x${{ github.event.client_payload.update_feeds || github.event.deployment.payload.update_feeds }}" != "xtrue" ] || UPDATE_FEEDS=1
         echo "::set-env name=UPDATE_FEEDS::${UPDATE_FEEDS}"
 
         scripts/cleanup.sh
@@ -416,8 +432,8 @@ jobs:
 
     - name: Check if use latest base image
       env:
-        BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest }}
-        BOOL_USE_LATEST_INC: ${{ github.event.client_payload.use_latest_inc }}
+        BOOL_USE_LATEST: ${{ github.event.client_payload.use_latest || github.event.deployment.payload.use_latest }}
+        BOOL_USE_LATEST_INC: ${{ github.event.client_payload.use_latest_inc || github.event.deployment.payload.use_latest_inc }}
       run: |
         . docker.sh
         set +eo pipefail
@@ -444,7 +460,7 @@ jobs:
 
     # Allow intermediate customization
     - name: SSH connection to Actions
-      if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
+      if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
@@ -480,7 +496,7 @@ jobs:
       run: df -h
 
     - name: Push image
-      if: (!cancelled()) && (!failure() || github.event_name == 'repository_dispatch' && github.event.client_payload.push_when_fail == true)
+      if: (!cancelled()) && (success() || github.event.client_payload.push_when_fail == true || github.event.deployment.payload.push_when_fail == true)
       run: |
         . docker.sh
         push_image
@@ -526,12 +542,18 @@ jobs:
 
     # failure checking
     - name: SSH connection to Actions
-      if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
+      if: failure() || github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       uses: tete1030/debugger-action@my
 
   direct-build:
     runs-on: ubuntu-18.04
-    if: github.event_name == 'repository_dispatch' && github.event.action == 'direct-build'
+    if: (
+        github.event_name == 'repository_dispatch' &&
+        github.event.action == 'direct-build'
+      ) || (
+        github.event_name == 'deployment' &&
+        github.event.deployment.task == 'direct-build'
+      )
     steps:
     - name: Checkout
       uses: actions/checkout@master
@@ -556,7 +578,7 @@ jobs:
 
     # Allow intermediate customization
     - name: SSH connection to Actions
-      if: github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true
+      if: github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       env:
         TIMEOUT_MIN: 5
       uses: tete1030/debugger-action@my
@@ -606,7 +628,7 @@ jobs:
 
     # failure checking
     - name: SSH connection to Actions
-      if: failure() || (github.event_name == 'repository_dispatch' && github.event.client_payload.debug == true)
+      if: failure() || github.event.client_payload.debug == true || github.event.deployment.payload.debug == true
       uses: tete1030/debugger-action@my
 
 # Base
