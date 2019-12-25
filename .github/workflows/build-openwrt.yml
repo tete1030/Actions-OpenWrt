@@ -18,10 +18,10 @@ on:
     - README.md
     - LICENSE
     - .dockerignore
-  schedule:
-    - cron: '*/5 * * * *'
-  watch:
-    types: [started]
+  # schedule:
+  #   - cron: '*/5 * * * *'
+  # watch:
+  #   types: [started]
 
 env:
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
@@ -373,7 +373,7 @@ jobs:
   docker-build-package:
     runs-on: ubuntu-18.04
     if: |
-      github.event_name == 'push' || (
+      (
         github.event_name == 'repository_dispatch' && 
         github.event.action == 'docker-build-package'
       ) || (
