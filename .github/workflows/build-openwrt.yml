@@ -18,11 +18,10 @@ on:
     - README.md
     - LICENSE
     - .dockerignore
-
-#  schedule:
-#    - cron: 0 8 * * 5
-#  watch:
-#    types: [started]
+  schedule:
+    - cron: '*/5 * * * *'
+  watch:
+    types: [started]
 
 env:
   SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
@@ -35,6 +34,16 @@ env:
   REPO_BRANCH: master
 
 jobs:
+  context:
+    name: Print runner context (for debugging)
+    runs-on: ubuntu-18.04
+    steps:
+    - name: Dump github context
+      run: |
+        cat << 'EOF'
+        ${{toJSON(github)}}
+        EOF
+
   docker-build:
     runs-on: ubuntu-18.04
     if: |
@@ -187,7 +196,7 @@ jobs:
   docker-build-inc:
     runs-on: ubuntu-18.04
     if: | 
-      github.event_name == 'push' || (
+      (
         github.event_name == 'repository_dispatch' && 
         github.event.action == 'docker-build-inc'
       ) || (
